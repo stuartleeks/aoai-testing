@@ -25,7 +25,6 @@ if embedding_deployment_name is None:
     exit(1)
 
 
-
 @dataclass
 class RequestSummary:
     status_code: int
@@ -46,7 +45,13 @@ def call_embedding_api_non_streaming():
     url = f"{api_endpoint}/openai/deployments/{embedding_deployment_name}/embeddings"
     querystring = {"api-version": "2024-02-15-preview"}
 
-    payload = '{"input": "This is some text to generate embeddings for", "model": "embedding"}'
+    # payload = '{"input": "This is some text to generate embeddings for", "model": "embedding"}'
+    payload = (
+        '{"input": "This is some text to generate embeddings for and is'
+        + 'longer than the previous text which really was quite short.' + 
+        ' This would be a good place to put a short story about a dog. ' + 
+        ' I mean, who doesn''t like stories about dogs?", "model": "embedding"}'
+    )
 
     headers = {
         "content-type": "application/json",
