@@ -5,8 +5,9 @@
 		- [Test 1: 1000TPM quota, short text, no sleep](#test-1-1000tpm-quota-short-text-no-sleep)
 		- [Test 2: 1000TPM quota, short text, 1s sleep](#test-2-1000tpm-quota-short-text-1s-sleep)
 		- [Test 3: 1000TPM quota, short text, 10s sleep](#test-3-1000tpm-quota-short-text-10s-sleep)
-	- [AOAI, long embedding text, 1000TPM quota](#aoai-long-embedding-text-1000tpm-quota)
-		- [Test 1: 1000TPM quota, longer text, no sleep](#test-1-1000tpm-quota-longer-text-no-sleep)
+	- [AOAI, short embedding text, 10,000TPM quota](#aoai-short-embedding-text-10000tpm-quota)
+	- [AOAI, 46-token embedding text, 10,000TPM quota](#aoai-46-token-embedding-text-10000tpm-quota)
+	- [AOAI, Comparison of body vs header token amounts](#aoai-comparison-of-body-vs-header-token-amounts)
 
 
 ## AOAI, short embedding text, 1000TPM quota, 
@@ -17,6 +18,9 @@ Test setup:
 - TPM quota of `1,000` TPM
 
 Embedding text: `This is some text to generate embeddings for`
+
+**UPDATE: I just realised that 1000 TPM corresponds to 6RPM!! So the rate-limiting that is kicking in is based on number of requests not the number of tokens!**
+
 
 ### Test 1: 1000TPM quota, short text, no sleep
 
@@ -35,8 +39,6 @@ Results:
 | 429         | 9920                  | 8                    | 8                             |                             | n/a                                 |                      |
 | 429         | 9912                  | 8                    | 8                             |                             | n/a                                 |                      |
 
-
-**UPDATE: I just realised that 1000 TPM corresponds to 6RPM!! So the rate-limiting that is kicking in is based on number of requests not the number of tokens!**
 
 Notes:
 * This test was run after an idle period
@@ -94,7 +96,7 @@ Notes:
   * This suggests that the rate limit is being decremented by 11 tokens per request, which is higher than the 8 tokens per request that the body content suggests
   * This applies for the first 6 requests (i.e. the first minute). It then stops decrementing the rate limit tokens remaining which is consistent with a 1 minute sliding window
 
-
+<!-- 
 ## AOAI, long embedding text, 1000TPM quota
 
 Test setup:
@@ -125,4 +127,53 @@ Results:
 
 Notes:
 * Again, the APIM tokens consumed matches the body tokens
-  * And again, neither matches the decrement in the APIM tokens remaining (54 tokens this time)
+  * And again, neither matches the decrement in the APIM tokens remaining (54 tokens this time) -->
+
+
+## AOAI, short embedding text, 10,000TPM quota
+
+Test setup:
+- PAYG AOAI service.
+- `text-embedding-ada-002` model
+- TPM quota of `10,000` TPM
+- Embedding text: `This is some text to generate embeddings for`
+
+
+
+## AOAI, 46-token embedding text, 10,000TPM quota
+
+Test setup:
+- PAYG AOAI service.
+- `text-embedding-ada-002` model
+- TPM quota of `10,000` TPM
+Embedding text: `This is some text to generate embeddings for and is longer than the previous text which really was quite short. This would be a good place to put a short story about a dog. I mean, who doesn''t like stories about dogs?`
+
+
+| Status code | APIM tokens remaining | APIM tokens consumed | APIM tokens remaining (delta) | Rate limit tokens remaining | Rate limit tokens remaining (delta) | Body tokens (prompt) |
+| ----------- | --------------------- | -------------------- | ----------------------------- | --------------------------- | ----------------------------------- | -------------------- |
+| 200         | 9908                  | 46                   | n/a                           | 9946                        | n/a                                 | 46                   |
+| 200         | 9816                  | 46                   | 92                            | 9892                        | 54                                  | 46                   |
+| 200         | 9724                  | 46                   | 92                            | 9838                        | 54                                  | 46                   |
+| 200         | 9632                  | 46                   | 92                            | 9784                        | 54                                  | 46                   |
+| 200         | 9540                  | 46                   | 92                            | 9730                        | 54                                  | 46                   |
+| 200         | 9448                  | 46                   | 92                            | 9676                        | 54                                  | 46                   |
+| 200         | 9356                  | 46                   | 92                            | 9622                        | 54                                  | 46                   |
+| 200         | 9264                  | 46                   | 92                            | 9568                        | 54                                  | 46                   |
+| 200         | 9172                  | 46                   | 92                            | 9514                        | 54                                  | 46                   |
+| 200         | 9080                  | 46                   | 92                            | 9460                        | 54                                  | 46                   |
+
+
+
+## AOAI, Comparison of body vs header token amounts
+
+Test setup:
+- PAYG AOAI service.
+- `text-embedding-ada-002` model
+
+For this test I sent different embedding texts to capture the `usage.prompt_tokens` value from the request body and the difference in the `x-ratelimit-remaining-tokens` header values between requests.
+
+| `usage.prompt_tokens` | `x-ratelimit-remaining-tokens` delta |
+| --------------------- | ------------------------------------ |
+| 8                     | 11                                   |
+| 46                    | 54                                   |
+| 1751                  | 1897                                 |
