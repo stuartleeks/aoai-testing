@@ -172,8 +172,8 @@ Test setup:
 
 For this test I sent different embedding texts to capture the `usage.prompt_tokens` value from the request body and the difference in the `x-ratelimit-remaining-tokens` header values between requests.
 
-| `usage.prompt_tokens` | `x-ratelimit-remaining-tokens` delta |
-| --------------------- | ------------------------------------ |
-| 8                     | 11                                   |
-| 46                    | 54                                   |
-| 1751                  | 1897                                 |
+| `usage.prompt_tokens` | `x-ratelimit-remaining-tokens` delta | Diff as % of `usage.prompt_tokens` |
+| --------------------- | ------------------------------------ | ---------------------------------- |
+| 8                     | 11                                   | 38%                                |
+| 46                    | 54                                   | 17%                                |
+| 1751                  | 1897                                 | 8%                                 |
