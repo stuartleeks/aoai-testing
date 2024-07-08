@@ -62,8 +62,9 @@ def call_chat_api_non_streaming():
 
     payload = (
         # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false}'
+        # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 10}'
+        '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 1000}'
         # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 2000}'
-        '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 10}'
     )
 
     headers = {
