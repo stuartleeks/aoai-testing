@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import json
+import datetime
 import logging
 import os
 import requests
@@ -16,6 +16,7 @@ api_endpoint = os.getenv("APIM_ENDPOINT")
 chat_deployment_name = os.getenv("DEPLOYMENT_NAME")
 sleep_time = float(os.getenv("SLEEP_TIME", "0"))
 table_format = os.getenv("TABLE_FORMAT", "github")
+request_count = int(os.getenv("REQUEST_COUNT", "10"))
 
 if api_key is None:
     print("APIM_KEY is not set")
@@ -60,8 +61,9 @@ def call_chat_api_non_streaming():
     querystring = {"api-version": "2024-02-15-preview"}
 
     payload = (
-        '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false}'
+        # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false}'
         # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 2000}'
+        '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 10}'
     )
 
     headers = {
@@ -113,8 +115,8 @@ def test_chat_non_streaming():
     print(f"Running chat non-streaming test ({api_endpoint})")
 
     results = []
-    for i in range(10):
-        print(f"Making request {i}...")
+    for i in range(request_count):
+        print(f"{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")} Making request {i}...")
         result = call_chat_api_non_streaming()
         results.append(result)
         if sleep_time > 0:
@@ -122,6 +124,7 @@ def test_chat_non_streaming():
 
     last_apim_tokens_remaining = -1
     last_rate_limit_tokens_remaining = -1
+    last_rate_limit_requests_remaining = -1
     table_data = []
     for r in results:
         table_data.append(
@@ -136,6 +139,12 @@ def test_chat_non_streaming():
                     if last_rate_limit_tokens_remaining >= 0 and r.rate_limit_remaining_tokens is not None
                     else "n/a"
                 ),
+                r.rate_limit_remaining_requests,
+                (
+                    last_rate_limit_requests_remaining - r.rate_limit_remaining_requests
+                    if last_rate_limit_requests_remaining >= 0 and r.rate_limit_remaining_requests is not None
+                    else "n/a"
+                ),
                 num_tokens_from_string(r.text, "gpt-3.5-turbo-0613"),
                 r.body_tokens_prompt,
                 r.body_tokens_completion,
@@ -143,6 +152,7 @@ def test_chat_non_streaming():
         )
         last_apim_tokens_remaining = r.apim1_tokens_remaining or -1
         last_rate_limit_tokens_remaining = r.rate_limit_remaining_tokens or -1
+        last_rate_limit_requests_remaining = r.rate_limit_remaining_requests or -1
 
     columns = [
         "Status code",
@@ -151,6 +161,8 @@ def test_chat_non_streaming():
         "APIM tokens remaining (delta)",
         "Rate limit tokens remaining",
         "Rate limit tokens remaining (delta)",
+        "Rate limit requests remaining",
+        "Rate limit requests remaining (delta)",
         "Tiktoken count (generated)",
         "Body tokens (prompt)",
         "Body tokens (completion)",
