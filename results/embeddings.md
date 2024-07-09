@@ -8,7 +8,7 @@
 	- [AOAI, short embedding text, 10,000TPM quota](#aoai-short-embedding-text-10000tpm-quota)
 	- [AOAI, 46-token embedding text, 10,000TPM quota](#aoai-46-token-embedding-text-10000tpm-quota)
 	- [AOAI, Comparison of body vs header token amounts](#aoai-comparison-of-body-vs-header-token-amounts)
-	- [AOAI, Comparison of body vs header token amounts](#aoai-comparison-of-body-vs-header-token-amounts-1)
+	- [AOAI, Comparison of input prompt vs header token amounts](#aoai-comparison-of-input-prompt-vs-header-token-amounts)
 
 
 ## AOAI, short embedding text, 1000TPM quota, 
@@ -181,19 +181,46 @@ For this test I sent different embedding texts to capture the `usage.prompt_toke
 | 185                   | 207                                  | 12%                                |
 | 1751                  | 1897                                 | 8%                                 |
 
-## AOAI, Comparison of body vs header token amounts
+## AOAI, Comparison of input prompt vs header token amounts
 
 Test setup:
 - PAYG AOAI service.
-- `text-embedding-ada-002` model
 
 For this test I sent different embedding texts to capture the length of `input` value from the request body and the difference in the `x-ratelimit-remaining-tokens` header values between requests.
 
 
-| length of prompt input | `x-ratelimit-remaining-tokens` delta | 0.25 * length of prompt input |
-| ---------------------- | ------------------------------------ | ----------------------------- |
-| 216                    | 54                                   | 54                            |
-| 820                    | 207                                  | 205                           |
-| 1729                   | 433                                  | 432.25                        |
-| 2450                   | 613                                  | 612.5                         |
-| 3286                   | 822                                  | 821.5                         |
+**`text-embedding-ada-002` model**
+
+| Status code | APIM tokens remaining | APIM tokens consumed | APIM tokens remaining (delta) | Rate limit tokens remaining | Rate limit tokens remaining (delta) | math.ceil(len(input_text) * 0.25) | Body tokens (prompt) |
+| ----------- | --------------------- | -------------------- | ----------------------------- | --------------------------- | ----------------------------------- | --------------------------------- | -------------------- |
+| 200         | 9984                  | 8                    | n/a                           | 9989                        | n/a                                 | 11                                | 8                    |
+| 200         | 9968                  | 8                    | 16                            | 9978                        | 11                                  | 11                                | 8                    |
+| 200         | 9874                  | 47                   | 94                            | 9923                        | 55                                  | 55                                | 47                   |
+| 200         | 9638                  | 118                  | 236                           | 9791                        | 132                                 | 132                               | 118                  |
+| 200         | 9266                  | 186                  | 372                           | 9584                        | 207                                 | 207                               | 186                  |
+| 200         | 7392                  | 937                  | 1874                          | 8762                        | 822                                 | 822                               | 937                  |
+
+
+**`text-embedding-3-small` model**
+
+| Status code | APIM tokens remaining | APIM tokens consumed | APIM tokens remaining (delta) | Rate limit tokens remaining | Rate limit tokens remaining (delta) | math.ceil(len(input_text) * 0.25) | Body tokens (prompt) |
+| ----------- | --------------------- | -------------------- | ----------------------------- | --------------------------- | ----------------------------------- | --------------------------------- | -------------------- |
+| 200         | 9984                  | 8                    | n/a                           | 9989                        | n/a                                 | 11                                | 8                    |
+| 200         | 9968                  | 8                    | 16                            | 9978                        | 11                                  | 11                                | 8                    |
+| 200         | 9874                  | 47                   | 94                            | 9923                        | 55                                  | 55                                | 47                   |
+| 200         | 9638                  | 118                  | 236                           | 9791                        | 132                                 | 132                               | 118                  |
+| 200         | 9266                  | 186                  | 372                           | 9584                        | 207                                 | 207                               | 186                  |
+| 200         | 7392                  | 937                  | 1874                          | 8762                        | 822                                 | 822                               | 937                  |
+
+
+**`text-embedding-3-large` model**
+
+| Status code | APIM tokens remaining | APIM tokens consumed | APIM tokens remaining (delta) | Rate limit tokens remaining | Rate limit tokens remaining (delta) | math.ceil(len(input_text) * 0.25) | Body tokens (prompt) |
+| ----------- | --------------------- | -------------------- | ----------------------------- | --------------------------- | ----------------------------------- | --------------------------------- | -------------------- |
+| 200         | 7376                  | 8                    | n/a                           | 9989                        | n/a                                 | 11                                | 8                    |
+| 200         | 7360                  | 8                    | 16                            | 9978                        | 11                                  | 11                                | 8                    |
+| 200         | 7266                  | 47                   | 94                            | 9923                        | 55                                  | 55                                | 47                   |
+| 200         | 7030                  | 118                  | 236                           | 9791                        | 132                                 | 132                               | 118                  |
+| 200         | 6658                  | 186                  | 372                           | 9584                        | 207                                 | 207                               | 186                  |
+| 200         | 4784                  | 937                  | 1874                          | 8762                        | 822                                 | 822                               | 937                  |
+
