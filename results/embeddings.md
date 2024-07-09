@@ -8,6 +8,7 @@
 	- [AOAI, short embedding text, 10,000TPM quota](#aoai-short-embedding-text-10000tpm-quota)
 	- [AOAI, 46-token embedding text, 10,000TPM quota](#aoai-46-token-embedding-text-10000tpm-quota)
 	- [AOAI, Comparison of body vs header token amounts](#aoai-comparison-of-body-vs-header-token-amounts)
+	- [AOAI, Comparison of body vs header token amounts](#aoai-comparison-of-body-vs-header-token-amounts-1)
 
 
 ## AOAI, short embedding text, 1000TPM quota, 
@@ -176,4 +177,23 @@ For this test I sent different embedding texts to capture the `usage.prompt_toke
 | --------------------- | ------------------------------------ | ---------------------------------- |
 | 8                     | 11                                   | 38%                                |
 | 46                    | 54                                   | 17%                                |
+| 117                   | 131                                  | 12%                                |
+| 185                   | 207                                  | 12%                                |
 | 1751                  | 1897                                 | 8%                                 |
+
+## AOAI, Comparison of body vs header token amounts
+
+Test setup:
+- PAYG AOAI service.
+- `text-embedding-ada-002` model
+
+For this test I sent different embedding texts to capture the length of `input` value from the request body and the difference in the `x-ratelimit-remaining-tokens` header values between requests.
+
+
+| length of prompt input | `x-ratelimit-remaining-tokens` delta | 0.25 * length of prompt input |
+| ---------------------- | ------------------------------------ | ----------------------------- |
+| 216                    | 54                                   | 54                            |
+| 820                    | 207                                  | 205                           |
+| 1729                   | 433                                  | 432.25                        |
+| 2450                   | 613                                  | 612.5                         |
+| 3286                   | 822                                  | 821.5                         |
