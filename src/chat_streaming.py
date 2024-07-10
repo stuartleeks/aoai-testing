@@ -102,7 +102,7 @@ def call_chat_api_streaming():
         if event != "[DONE]":
             # print(event)
             completion_chunk = json.loads(event)
-            choices = completion_chunk["choices"]
+            choices = completion_chunk.get("choices")
             if choices and len(choices) > 0:
                 result += choices[0]["delta"].get("content") or ""
                 num_chunks += 1
@@ -113,6 +113,8 @@ def call_chat_api_streaming():
     apim2_tokens_consumed = int(response.headers["x-apim2-tokens-consumed"])
     rate_limit_remaining_tokens = int(response.headers["x-ratelimit-remaining-tokens"])
     rate_limit_remaining_requests = int(response.headers["x-ratelimit-remaining-requests"])
+
+    calculated_completion_tokens = num_tokens_from_string(result, "gpt-3.5-turbo-0613")
 
     return RequestSummary(
         status_code=response.status_code,
