@@ -13,7 +13,7 @@ load_dotenv()
 
 api_key = os.getenv("APIM_KEY")
 api_endpoint = os.getenv("APIM_ENDPOINT")
-chat_deployment_name = os.getenv("DEPLOYMENT_NAME")
+copmletions_deployment_name = os.getenv("DEPLOYMENT_NAME")
 sleep_time = float(os.getenv("SLEEP_TIME", "0"))
 table_format = os.getenv("TABLE_FORMAT", "github")
 request_count = int(os.getenv("REQUEST_COUNT", "10"))
@@ -24,7 +24,7 @@ if api_key is None:
 if api_endpoint is None:
     print("APIM_ENDPOINT is not set")
     exit(1)
-if chat_deployment_name is None:
+if copmletions_deployment_name is None:
     print("CHAT_DEPLOYMENT_NAME is not set")
     exit(1)
 
@@ -45,10 +45,6 @@ class RequestSummary:
     status_code: int
     text: str
     num_chunks: int
-    apim1_tokens_remaining: int
-    apim1_tokens_consumed: int
-    apim2_tokens_remaining: int
-    apim2_tokens_consumed: int
     rate_limit_remaining_tokens: int | None
     rate_limit_remaining_requests: int | None
     body_tokens_prompt: int | None
@@ -56,16 +52,17 @@ class RequestSummary:
     body_tokens_total: int | None
 
 
-def call_chat_api_non_streaming():
-    url = f"{api_endpoint}/openai/deployments/{chat_deployment_name}/chat/completions"
+def call_completions_api_non_streaming():
+    url = f"{api_endpoint}/openai/deployments/{copmletions_deployment_name}//completions"
     querystring = {"api-version": "2024-02-15-preview"}
 
     payload = (
-        '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false}'
-        # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 10}'
-        # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 100}'
-        # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 1000}'
-        # '{"messages": [{"role": "user","content": "What is the meaning of life?"}],"stream": false,"max_tokens": 2000}'
+        # '{"prompt": "What is the meaning of life?"}'
+        '{"prompt": "I am in a philosophical yet optimistic mood and a friend asked me what I thought the meaning of life is. My response is"}'
+        # '{"prompt": "What is the meaning of life?","max_tokens": 10}'
+        # '{"prompt": "What is the meaning of life?","max_tokens": 100}'
+        # '{"prompt": "What is the meaning of life?","max_tokens": 1000}'
+        # '{"prompt": "What is the meaning of life?","max_tokens": 2000}'
     )
 
     headers = {
@@ -77,17 +74,13 @@ def call_chat_api_non_streaming():
     response = requests.request("POST", url, data=payload, headers=headers, params=querystring, timeout=30)
 
     success = response.status_code < 300
-    apim1_tokens_remaining = int(response.headers["x-apim1-tokens-remaining"])
-    apim1_tokens_consumed = int(response.headers["x-apim1-tokens-consumed"])
-    apim2_tokens_remaining = int(response.headers["x-apim2-tokens-remaining"])
-    apim2_tokens_consumed = int(response.headers["x-apim2-tokens-consumed"])
 
     rate_limit_remaining_tokens = int(response.headers["x-ratelimit-remaining-tokens"]) if success else None
     rate_limit_remaining_requests = int(response.headers["x-ratelimit-remaining-requests"]) if success else None
 
     if success:
         body = response.json()
-        text = body["choices"][0]["message"]["content"]
+        text = body["choices"][0]["text"]
         body_tokens_prompt = body["usage"]["prompt_tokens"]
         body_tokens_completion = body["usage"]["completion_tokens"]
         body_tokens_total = body["usage"]["total_tokens"]
@@ -101,10 +94,6 @@ def call_chat_api_non_streaming():
         status_code=response.status_code,
         text=text,
         num_chunks=1,
-        apim1_tokens_remaining=apim1_tokens_remaining,
-        apim1_tokens_consumed=apim1_tokens_consumed,
-        apim2_tokens_remaining=apim2_tokens_remaining,
-        apim2_tokens_consumed=apim2_tokens_consumed,
         rate_limit_remaining_tokens=rate_limit_remaining_tokens,
         rate_limit_remaining_requests=rate_limit_remaining_requests,
         body_tokens_prompt=body_tokens_prompt,
@@ -113,18 +102,17 @@ def call_chat_api_non_streaming():
     )
 
 
-def test_chat_non_streaming():
-    print(f"Running chat non-streaming test ({api_endpoint})")
+def test_completions_non_streaming():
+    print(f"Running completions non-streaming test ({api_endpoint})")
 
     results = []
     for i in range(request_count):
         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')} Making request {i}...")
-        result = call_chat_api_non_streaming()
+        result = call_completions_api_non_streaming()
         results.append(result)
         if sleep_time > 0:
             time.sleep(sleep_time)
 
-    last_apim_tokens_remaining = -1
     last_rate_limit_tokens_remaining = -1
     last_rate_limit_requests_remaining = -1
     table_data = []
@@ -132,9 +120,6 @@ def test_chat_non_streaming():
         table_data.append(
             [
                 r.status_code,
-                r.apim1_tokens_remaining,
-                r.apim1_tokens_consumed,
-                last_apim_tokens_remaining - r.apim1_tokens_remaining if last_apim_tokens_remaining >= 0 else "n/a",
                 r.rate_limit_remaining_tokens,
                 (
                     last_rate_limit_tokens_remaining - r.rate_limit_remaining_tokens
@@ -152,15 +137,12 @@ def test_chat_non_streaming():
                 r.body_tokens_completion,
             ]
         )
-        last_apim_tokens_remaining = r.apim1_tokens_remaining or -1
+        # last_apim_tokens_remaining = r.apim1_tokens_remaining or -1
         last_rate_limit_tokens_remaining = r.rate_limit_remaining_tokens or -1
         last_rate_limit_requests_remaining = r.rate_limit_remaining_requests or -1
 
     columns = [
         "Status code",
-        "APIM tokens remaining",
-        "APIM tokens consumed",
-        "APIM tokens remaining (delta)",
         "Rate limit tokens remaining",
         "Rate limit tokens remaining (delta)",
         "Rate limit requests remaining",
@@ -173,4 +155,4 @@ def test_chat_non_streaming():
     print(tabulate(table_data, columns, tablefmt=table_format))
 
 
-test_chat_non_streaming()
+test_completions_non_streaming()
